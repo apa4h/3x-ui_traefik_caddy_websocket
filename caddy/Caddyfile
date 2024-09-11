@@ -1,0 +1,9 @@
+:80 {
+    file_server {
+        root /usr/share/caddy
+    }
+
+    reverse_proxy /ws 3x-ui:443 {
+        header_up X-Forwarded-For {remote_host}
+    }
+}

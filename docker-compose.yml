@@ -1,0 +1,52 @@
+---
+version: "3"
+
+services:
+  3x-ui:
+    image: ghcr.io/mhsanaei/3x-ui:latest
+    container_name: 3x-ui
+    hostname: yourhostname
+    volumes:
+      - $PWD/db/:/etc/x-ui/
+#      - /opt/traefik/data/certs/:/etc/letsencrypt/:rw
+    environment:
+      XRAY_VMESS_AEAD_FORCED: "false"
+    tty: true
+    networks:
+      web:
+        ipv4_address: 172.24.0.44
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.3x-ui.entrypoints=https"
+      - "traefik.http.routers.3x-ui.rule=Host(`hostname.webgui`)"
+      - "traefik.http.routers.3x-ui.tls=true"
+      - "traefik.http.routers.3x-ui.tls.certresolver=cloudflare-dns"
+      - "traefik.http.services.3x-ui.loadbalancer.server.port=2053"
+      - "traefik.http.routers.3x-ui.service=3x-ui"
+      - "traefik.docker.network=web"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.6.4-alpine
+    restart: always
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/site/:/usr/share/caddy
+      - ./caddy/caddy_data/:/data
+      - ./caddy/caddy_config/:/config
+    networks:
+      web:
+        ipv4_address: 172.24.0.55
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.ws.entrypoints=https"
+      - "traefik.http.routers.ws.rule=Host(`websocket.hostname`)"
+      - "traefik.http.routers.ws.tls=true"
+      - "traefik.http.routers.ws.tls.certresolver=cloudflare-dns"
+      - "traefik.http.services.ws.loadbalancer.server.port=80"
+
+networks:
+  web:
+    external: true
+  
